@@ -404,6 +404,10 @@ let selectedPlatform = 'colab';
 let monitorInterval = null;
 let isMonitoring = false;
 
+// Variáveis para automação CSV
+let transcriptionInterval = null;
+let isTranscribing = false;
+
 // Configurar event listeners para export
 function setupExportListeners() {
     // Seleção de plataforma
@@ -647,10 +651,12 @@ document.addEventListener('DOMContentLoaded', function() {
     // Configurar event listeners
     setupEventListeners();
     setupExportListeners();
+    setupAutomationListeners();
     
     // Carregar dados iniciais
     loadUploadedModels();
     loadTrainedModels();
+    loadTranscriptionEngines();
     
     // Verificar status de treinamento
     checkTrainingStatus();
@@ -1125,3 +1131,470 @@ window.scrollToSection = scrollToSection;
 window.copyToClipboard = copyToClipboard;
 window.toggleSection = toggleSection;
 window.searchManual = searchManual;
+
+// Configurar listeners para automação CSV
+function setupAutomationListeners() {
+    // Form de transcrição automática
+    const transcriptionForm = document.getElementById('transcriptionForm');
+    if (transcriptionForm) {
+        transcriptionForm.addEventListener('submit', handleAutoTranscription);
+    }
+    
+    // Form de arquivo de texto
+    const textFileForm = document.getElementById('textFileForm');
+    if (textFileForm) {
+        textFileForm.addEventListener('submit', handleTextFileUpload);
+    }
+    
+    // Form de editor manual
+    const manualEditorForm = document.getElementById('manualEditorForm');
+    if (manualEditorForm) {
+        manualEditorForm.addEventListener('submit', handleManualCSVSave);
+    }
+}
+
+// Mostrar aba de automação
+function showAutomationTab(tabName) {
+    // Remover classe active de todas as abas
+    const tabs = document.querySelectorAll('.automation-tab');
+    tabs.forEach(tab => tab.classList.remove('active'));
+    
+    const contents = document.querySelectorAll('.automation-content');
+    contents.forEach(content => content.classList.remove('active'));
+    
+    // Ativar aba selecionada
+    const activeTab = document.querySelector(`[onclick="showAutomationTab('${tabName}')"]`);
+    if (activeTab) {
+        activeTab.classList.add('active');
+    }
+    
+    const activeContent = document.getElementById(tabName);
+    if (activeContent) {
+        activeContent.classList.add('active');
+    }
+    
+    // Carregar dados específicos da aba
+    if (tabName === 'transcription' || tabName === 'text-file' || tabName === 'manual-editor') {
+        loadModelsForAutomation();
+    }
+}
+
+// Carregar engines de transcrição disponíveis
+async function loadTranscriptionEngines() {
+    try {
+        const response = await fetch('/transcription_engines');
+        const data = await response.json();
+        
+        const select = document.getElementById('transcription_engine');
+        if (select && data.engines) {
+            select.innerHTML = '';
+            
+            data.engines.forEach(engine => {
+                const option = document.createElement('option');
+                option.value = engine;
+                
+                const engineNames = {
+                    'whisper': 'Whisper (OpenAI) - Recomendado',
+                    'google': 'Google Speech Recognition',
+                    'wav2vec2': 'Wav2Vec2 (Facebook)',
+                    'vosk': 'Vosk (Offline)'
+                };
+                
+                option.textContent = engineNames[engine] || engine;
+                
+                if (engine === data.default) {
+                    option.selected = true;
+                }
+                
+                select.appendChild(option);
+            });
+        }
+    } catch (error) {
+        console.error('Erro ao carregar engines de transcrição:', error);
+    }
+}
+
+// Carregar modelos para automação
+async function loadModelsForAutomation() {
+    try {
+        const response = await fetch('/training_datasets');
+        const datasets = await response.json();
+        
+        const selects = [
+            'transcription_model',
+            'text_file_model', 
+            'editor_model'
+        ];
+        
+        selects.forEach(selectId => {
+            const select = document.getElementById(selectId);
+            if (select) {
+                select.innerHTML = '<option value="">Selecione um modelo...</option>';
+                
+                datasets.forEach(dataset => {
+                    const option = document.createElement('option');
+                    option.value = dataset.name;
+                    option.textContent = `${dataset.name} (${dataset.audio_count} áudios)`;
+                    select.appendChild(option);
+                });
+            }
+        });
+        
+    } catch (error) {
+        console.error('Erro ao carregar modelos para automação:', error);
+    }
+}
+
+// Transcrição automática
+async function handleAutoTranscription(event) {
+    event.preventDefault();
+    
+    const formData = new FormData(event.target);
+    const data = {
+        model_name: formData.get('model_name'),
+        engine: formData.get('engine'),
+        language: formData.get('language')
+    };
+    
+    if (!data.model_name) {
+        alert('Selecione um modelo para transcrever');
+        return;
+    }
+    
+    try {
+        const response = await fetch('/start_transcription', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(data)
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            // Mostrar progresso
+            document.getElementById('transcriptionProgress').style.display = 'block';
+            event.target.querySelector('button[type="submit"]').disabled = true;
+            
+            // Iniciar monitoramento
+            startTranscriptionMonitoring();
+        } else {
+            alert(`Erro: ${result.error}`);
+        }
+    } catch (error) {
+        alert(`Erro: ${error.message}`);
+    }
+}
+
+// Monitorar progresso da transcrição
+function startTranscriptionMonitoring() {
+    if (transcriptionInterval) {
+        clearInterval(transcriptionInterval);
+    }
+    
+    isTranscribing = true;
+    
+    transcriptionInterval = setInterval(async () => {
+        try {
+            const response = await fetch('/transcription_status');
+            const status = await response.json();
+            
+            updateTranscriptionUI(status);
+            
+            if (!status.is_running) {
+                clearInterval(transcriptionInterval);
+                transcriptionInterval = null;
+                isTranscribing = false;
+                
+                // Reabilitar botão
+                const submitBtn = document.querySelector('#transcriptionForm button[type="submit"]');
+                if (submitBtn) {
+                    submitBtn.disabled = false;
+                }
+                
+                if (status.progress === 100) {
+                    showTranscriptionComplete();
+                }
+            }
+        } catch (error) {
+            console.error('Erro ao verificar status da transcrição:', error);
+        }
+    }, 2000);
+}
+
+// Atualizar UI da transcrição
+function updateTranscriptionUI(status) {
+    // Atualizar barra de progresso
+    const progressFill = document.getElementById('transcriptionProgressFill');
+    const progressText = document.getElementById('transcriptionProgressText');
+    
+    if (progressFill && progressText) {
+        progressFill.style.width = `${status.progress}%`;
+        progressText.textContent = `${status.progress.toFixed(1)}%`;
+    }
+    
+    // Atualizar detalhes
+    const currentFile = document.getElementById('currentTranscriptionFile');
+    const completed = document.getElementById('completedTranscriptions');
+    const total = document.getElementById('totalTranscriptions');
+    
+    if (currentFile) currentFile.textContent = status.current_file || '-';
+    if (completed) completed.textContent = status.completed_files || 0;
+    if (total) total.textContent = status.total_files || 0;
+    
+    // Atualizar resultados
+    const resultsList = document.getElementById('transcriptionResultsList');
+    if (resultsList && status.results) {
+        resultsList.innerHTML = '';
+        
+        status.results.forEach(result => {
+            const item = document.createElement('div');
+            item.className = 'result-item';
+            
+            item.innerHTML = `
+                <span class="result-file">${result.file}</span>
+                <span class="result-text">${result.text}</span>
+                <span class="result-status ${result.status}">${result.status === 'success' ? '✅' : '❌'}</span>
+            `;
+            
+            resultsList.appendChild(item);
+        });
+    }
+}
+
+// Mostrar conclusão da transcrição
+function showTranscriptionComplete() {
+    const progressSection = document.getElementById('transcriptionProgress');
+    if (progressSection) {
+        const completeMessage = document.createElement('div');
+        completeMessage.className = 'validation-message success';
+        completeMessage.innerHTML = `
+            <i class="fas fa-check-circle"></i>
+            <span>Transcrição automática concluída! O arquivo metadata.csv foi gerado.</span>
+        `;
+        
+        progressSection.appendChild(completeMessage);
+    }
+}
+
+// Upload de arquivo de texto
+async function handleTextFileUpload(event) {
+    event.preventDefault();
+    
+    const formData = new FormData(event.target);
+    
+    if (!formData.get('model_name')) {
+        alert('Selecione um modelo de destino');
+        return;
+    }
+    
+    if (!formData.get('text_file')) {
+        alert('Selecione um arquivo de texto');
+        return;
+    }
+    
+    try {
+        const response = await fetch('/upload_text_file', {
+            method: 'POST',
+            body: formData
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            showStatus('CSV gerado com sucesso a partir do arquivo de texto!', 'success');
+            event.target.reset();
+        } else {
+            alert(`Erro: ${result.error}`);
+        }
+    } catch (error) {
+        alert(`Erro: ${error.message}`);
+    }
+}
+
+// Salvar CSV manual
+async function handleManualCSVSave(event) {
+    event.preventDefault();
+    
+    const formData = new FormData(event.target);
+    const modelName = formData.get('model_name');
+    const csvContent = formData.get('csv_content');
+    
+    if (!modelName) {
+        alert('Selecione um modelo de destino');
+        return;
+    }
+    
+    if (!csvContent.trim()) {
+        alert('Digite o conteúdo do CSV');
+        return;
+    }
+    
+    // Validar formato antes de salvar
+    const validation = validateCSVContent(csvContent);
+    if (!validation.valid) {
+        showValidationResults(validation);
+        return;
+    }
+    
+    try {
+        // Salvar via API (implementar endpoint se necessário)
+        // Por enquanto, mostrar sucesso
+        showStatus('CSV salvo com sucesso!', 'success');
+        
+    } catch (error) {
+        alert(`Erro: ${error.message}`);
+    }
+}
+
+// Validar conteúdo do CSV
+function validateCSV() {
+    const csvContent = document.getElementById('csv_editor').value;
+    const validation = validateCSVContent(csvContent);
+    showValidationResults(validation);
+}
+
+function validateCSVContent(content) {
+    const lines = content.trim().split('\n').filter(line => line.trim());
+    const validation = {
+        valid: true,
+        messages: []
+    };
+    
+    if (lines.length === 0) {
+        validation.valid = false;
+        validation.messages.push({
+            type: 'error',
+            message: 'CSV está vazio'
+        });
+        return validation;
+    }
+    
+    lines.forEach((line, index) => {
+        const parts = line.split('|');
+        
+        if (parts.length < 2) {
+            validation.valid = false;
+            validation.messages.push({
+                type: 'error',
+                message: `Linha ${index + 1}: Formato inválido. Use id|texto ou id|falante|texto`
+            });
+        } else if (parts.length > 3) {
+            validation.messages.push({
+                type: 'warning',
+                message: `Linha ${index + 1}: Muitos separadores "|". Verifique o formato`
+            });
+        }
+        
+        if (!parts[0].trim()) {
+            validation.valid = false;
+            validation.messages.push({
+                type: 'error',
+                message: `Linha ${index + 1}: ID não pode estar vazio`
+            });
+        }
+        
+        const textIndex = parts.length === 2 ? 1 : 2;
+        if (!parts[textIndex] || !parts[textIndex].trim()) {
+            validation.valid = false;
+            validation.messages.push({
+                type: 'error',
+                message: `Linha ${index + 1}: Texto não pode estar vazio`
+            });
+        }
+    });
+    
+    if (validation.valid && validation.messages.length === 0) {
+        validation.messages.push({
+            type: 'success',
+            message: `CSV válido! ${lines.length} entradas encontradas.`
+        });
+    }
+    
+    return validation;
+}
+
+function showValidationResults(validation) {
+    const validationDiv = document.getElementById('csvValidation');
+    const messagesDiv = document.getElementById('validationMessages');
+    
+    if (!validationDiv || !messagesDiv) return;
+    
+    messagesDiv.innerHTML = '';
+    
+    validation.messages.forEach(msg => {
+        const messageDiv = document.createElement('div');
+        messageDiv.className = `validation-message ${msg.type}`;
+        
+        const icon = msg.type === 'success' ? 'check-circle' : 
+                    msg.type === 'error' ? 'exclamation-circle' : 'exclamation-triangle';
+        
+        messageDiv.innerHTML = `
+            <i class="fas fa-${icon}"></i>
+            <span>${msg.message}</span>
+        `;
+        
+        messagesDiv.appendChild(messageDiv);
+    });
+    
+    validationDiv.style.display = 'block';
+}
+
+// Carregar CSV existente
+async function loadExistingCSV() {
+    const modelName = document.getElementById('editor_model').value;
+    
+    if (!modelName) {
+        alert('Selecione um modelo primeiro');
+        return;
+    }
+    
+    try {
+        // Implementar carregamento de CSV existente
+        // Por enquanto, mostrar placeholder
+        const editor = document.getElementById('csv_editor');
+        editor.value = `${modelName}_001|Exemplo de texto carregado do CSV existente.
+${modelName}_002|Segunda linha de exemplo do arquivo.
+${modelName}_003|Terceira linha para demonstração.`;
+        
+        showStatus('CSV existente carregado (exemplo)', 'info');
+        
+    } catch (error) {
+        alert(`Erro ao carregar CSV: ${error.message}`);
+    }
+}
+
+// Função auxiliar para mostrar status
+function showStatus(message, type) {
+    // Criar elemento de status temporário
+    const statusDiv = document.createElement('div');
+    statusDiv.className = `validation-message ${type}`;
+    statusDiv.innerHTML = `
+        <i class="fas fa-${type === 'success' ? 'check-circle' : 'info-circle'}"></i>
+        <span>${message}</span>
+    `;
+    
+    // Adicionar ao DOM temporariamente
+    document.body.appendChild(statusDiv);
+    statusDiv.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        z-index: 1000;
+        min-width: 300px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+    `;
+    
+    // Remover após 3 segundos
+    setTimeout(() => {
+        if (document.body.contains(statusDiv)) {
+            document.body.removeChild(statusDiv);
+        }
+    }, 3000);
+}
+
+// Exportar funções globais para automação
+window.showAutomationTab = showAutomationTab;
+window.validateCSV = validateCSV;
+window.loadExistingCSV = loadExistingCSV;

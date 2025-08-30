@@ -277,6 +277,98 @@ def download_trained_model():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+@app.route('/transcription_engines')
+def get_transcription_engines():
+    """Retorna engines de transcrição disponíveis"""
+    try:
+        import auto_transcription
+        engines = auto_transcription.get_transcription_engines()
+        return jsonify({
+            'engines': engines,
+            'default': 'whisper' if 'whisper' in engines else engines[0] if engines else None
+        })
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/start_transcription', methods=['POST'])
+def start_auto_transcription():
+    """Inicia transcrição automática de áudios"""
+    try:
+        data = request.json
+        model_name = data.get('model_name')
+        engine = data.get('engine', 'whisper')
+        language = data.get('language', 'pt')
+        
+        if not model_name:
+            return jsonify({'error': 'Nome do modelo é obrigatório'}), 400
+        
+        audio_dir = os.path.join(TRAINING_FOLDER, model_name, 'wav')
+        output_csv = os.path.join(TRAINING_FOLDER, model_name, 'metadata.csv')
+        
+        if not os.path.exists(audio_dir):
+            return jsonify({'error': 'Diretório de áudio não encontrado'}), 400
+        
+        # Iniciar transcrição em thread separada
+        transcription_thread = threading.Thread(
+            target=run_auto_transcription,
+            args=(audio_dir, output_csv, engine, language)
+        )
+        transcription_thread.start()
+        
+        return jsonify({'success': True, 'message': 'Transcrição automática iniciada'})
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/transcription_status')
+def get_transcription_status():
+    """Retorna status da transcrição automática"""
+    try:
+        import auto_transcription
+        status = auto_transcription.get_transcription_status()
+        return jsonify(status)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/upload_text_file', methods=['POST'])
+def upload_text_file():
+    """Upload de arquivo de texto para gerar CSV"""
+    try:
+        if 'text_file' not in request.files:
+            return jsonify({'error': 'Nenhum arquivo de texto enviado'}), 400
+        
+        text_file = request.files['text_file']
+        model_name = request.form.get('model_name')
+        
+        if not model_name:
+            return jsonify({'error': 'Nome do modelo é obrigatório'}), 400
+        
+        # Salvar arquivo temporariamente
+        model_dir = os.path.join(TRAINING_FOLDER, model_name)
+        temp_text_path = os.path.join(model_dir, 'temp_texts.txt')
+        text_file.save(temp_text_path)
+        
+        # Gerar CSV
+        import auto_transcription
+        audio_dir = os.path.join(model_dir, 'wav')
+        output_csv = os.path.join(model_dir, 'metadata.csv')
+        
+        success = auto_transcription.global_csv_generator.create_from_text_file(
+            temp_text_path, audio_dir, output_csv
+        )
+        
+        # Limpar arquivo temporário
+        if os.path.exists(temp_text_path):
+            os.remove(temp_text_path)
+        
+        if success:
+            return jsonify({'success': True, 'message': 'CSV gerado a partir do arquivo de texto'})
+        else:
+            return jsonify({'error': 'Falha ao gerar CSV'}), 500
+            
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
 @app.route('/test_voice', methods=['POST'])
 def test_voice():
     try:
@@ -542,6 +634,27 @@ def download_model_from_cloud(model_url, model_name):
         
     except Exception as e:
         print(f"❌ Erro ao baixar modelo: {e}")
+
+def run_auto_transcription(audio_dir, output_csv, engine, language):
+    """Executa transcrição automática em thread separada"""
+    try:
+        import auto_transcription
+        
+        def transcription_callback(status):
+            # Callback para atualizar progresso (pode ser expandido)
+            print(f"📊 Progresso: {status['progress']:.1f}% - {status['current_file']}")
+        
+        success = auto_transcription.start_auto_transcription(
+            audio_dir, output_csv, engine, language, transcription_callback
+        )
+        
+        if success:
+            print(f"✅ Transcrição concluída: {output_csv}")
+        else:
+            print(f"❌ Falha na transcrição automática")
+            
+    except Exception as e:
+        print(f"❌ Erro na transcrição: {e}")
 
 if __name__ == '__main__':
     # Criar diretório para arquivos estáticos
