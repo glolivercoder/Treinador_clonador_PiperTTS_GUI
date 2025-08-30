@@ -1,0 +1,37 @@
+Collecting pytorch-lightning
+  Downloading pytorch_lightning-2.5.4-py3-none-any.whl.metadata (20 kB)
+Requirement already satisfied: torch>=2.1.0 in c:\users\gloli\appdata\local\programs\python\python311\lib\site-packages (from pytorch-lightning) (2.4.1+cpu)
+Requirement already satisfied: tqdm>=4.57.0 in c:\users\gloli\appdata\local\programs\python\python311\lib\site-packages (from pytorch-lightning) (4.66.1)
+Requirement already satisfied: PyYAML>5.4 in c:\users\gloli\appdata\local\programs\python\python311\lib\site-packages (from pytorch-lightning) (6.0.2)
+Requirement already satisfied: fsspec>=2022.5.0 in c:\users\gloli\appdata\local\programs\python\python311\lib\site-packages (from fsspec[http]>=2022.5.0->pytorch-lightning) (2025.3.0)
+Collecting torchmetrics>0.7.0 (from pytorch-lightning)
+  Downloading torchmetrics-1.8.1-py3-none-any.whl.metadata (22 kB)
+Requirement already satisfied: packaging>=20.0 in c:\users\gloli\appdata\local\programs\python\python311\lib\site-packages (from pytorch-lightning) (25.0)
+Requirement already satisfied: typing-extensions>4.5.0 in c:\users\gloli\appdata\local\programs\python\python311\lib\site-packages (from pytorch-lightning) (4.14.1)
+Collecting lightning-utilities>=0.10.0 (from pytorch-lightning)
+  Downloading lightning_utilities-0.15.2-py3-none-any.whl.metadata (5.7 kB)
+Requirement already satisfied: aiohttp!=4.0.0a0,!=4.0.0a1 in c:\users\gloli\appdata\local\programs\python\python311\lib\site-packages (from fsspec[http]>=2022.5.0->pytorch-lightning) (3.9.1)
+Requirement already satisfied: attrs>=17.3.0 in c:\users\gloli\appdata\local\programs\python\python311\lib\site-packages (from aiohttp!=4.0.0a0,!=4.0.0a1->fsspec[http]>=2022.5.0->pytorch-lightning) (25.3.0)
+Requirement already satisfied: multidict<7.0,>=4.5 in c:\users\gloli\appdata\local\programs\python\python311\lib\site-packages (from aiohttp!=4.0.0a0,!=4.0.0a1->fsspec[http]>=2022.5.0->pytorch-lightning) (6.6.3)
+Requirement already satisfied: yarl<2.0,>=1.0 in c:\users\gloli\appdata\local\programs\python\python311\lib\site-packages (from aiohttp!=4.0.0a0,!=4.0.0a1->fsspec[http]>=2022.5.0->pytorch-lightning) (1.20.1)
+Requirement already satisfied: frozenlist>=1.1.1 in c:\users\gloli\appdata\local\programs\python\python311\lib\site-packages (from aiohttp!=4.0.0a0,!=4.0.0a1->fsspec[http]>=2022.5.0->pytorch-lightning) (1.7.0)
+Requirement already satisfied: aiosignal>=1.1.2 in c:\users\gloli\appdata\local\programs\python\python311\lib\site-packages (from aiohttp!=4.0.0a0,!=4.0.0a1->fsspec[http]>=2022.5.0->pytorch-lightning) (1.4.0)
+Requirement already satisfied: idna>=2.0 in c:\users\gloli\appdata\local\programs\python\python311\lib\site-packages (from yarl<2.0,>=1.0->aiohttp!=4.0.0a0,!=4.0.0a1->fsspec[http]>=2022.5.0->pytorch-lightning) (3.10)
+Requirement already satisfied: propcache>=0.2.1 in c:\users\gloli\appdata\local\programs\python\python311\lib\site-packages (from yarl<2.0,>=1.0->aiohttp!=4.0.0a0,!=4.0.0a1->fsspec[http]>=2022.5.0->pytorch-lightning) (0.3.2)
+Requirement already satisfied: setuptools in c:\users\gloli\appdata\local\programs\python\python311\lib\site-packages (from lightning-utilities>=0.10.0->pytorch-lightning) (80.9.0)
+Requirement already satisfied: filelock in c:\users\gloli\appdata\local\programs\python\python311\lib\site-packages (from torch>=2.1.0->pytorch-lightning) (3.18.0)
+Requirement already satisfied: sympy in c:\users\gloli\appdata\local\programs\python\python311\lib\site-packages (from torch>=2.1.0->pytorch-lightning) (1.14.0)
+Requirement already satisfied: networkx in c:\users\gloli\appdata\local\programs\python\python311\lib\site-packages (from torch>=2.1.0->pytorch-lightning) (2.8.8)
+Requirement already satisfied: jinja2 in c:\users\gloli\appdata\local\programs\python\python311\lib\site-packages (from torch>=2.1.0->pytorch-lightning) (3.1.6)
+Requirement already satisfied: numpy>1.20.0 in c:\users\gloli\appdata\local\programs\python\python311\lib\site-packages (from torchmetrics>0.7.0->pytorch-lightning) (1.24.3)
+Requirement already satisfied: colorama in c:\users\gloli\appdata\local\programs\python\python311\lib\site-packages (from tqdm>=4.57.0->pytorch-lightning) (0.4.6)
+Requirement already satisfied: MarkupSafe>=2.0 in c:\users\gloli\appdata\local\programs\python\python311\lib\site-packages (from jinja2->torch>=2.1.0->pytorch-lightning) (2.1.5)
+Requirement already satisfied: mpmath<1.4,>=1.1.0 in c:\users\gloli\appdata\local\programs\python\python311\lib\site-packages (from sympy->torch>=2.1.0->pytorch-lightning) (1.3.0)
+Downloading pytorch_lightning-2.5.4-py3-none-any.whl (829 kB)
+   ---------------------------------------- 829.2/829.2 kB 7.3 MB/s  0:00:00
+Downloading lightning_utilities-0.15.2-py3-none-any.whl (29 kB)
+Downloading torchmetrics-1.8.1-py3-none-any.whl (982 kB)
+   ---------------------------------------- 983.0/983.0 kB 11.4 MB/s  0:00:00
+Installing collected packages: lightning-utilities, torchmetrics, pytorch-lightning
+
+Successfully installed lightning-utilities-0.15.2 pytorch-lightning-2.5.4 torchmetrics-1.8.1
