@@ -656,6 +656,16 @@ def run_auto_transcription(audio_dir, output_csv, engine, language):
     except Exception as e:
         print(f"❌ Erro na transcrição: {e}")
 
+@app.route('/upload-googlecolab')
+def upload_googlecolab():
+    """Página de guia para upload manual no Google Colab"""
+    return render_template('Upload_Googlecolab.html')
+
+@app.route('/upload-kaggle')
+def upload_kaggle():
+    """Página de guia para upload manual no Kaggle"""
+    return render_template('Upload_Kaggle.html')
+
 if __name__ == '__main__':
     # Criar diretório para arquivos estáticos
     os.makedirs('static/audio', exist_ok=True)

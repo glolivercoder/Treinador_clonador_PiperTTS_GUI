@@ -87,6 +87,12 @@ modelo_colab_training.zip
 - Seleção por clique
 - Indicadores de recursos disponíveis
 
+### **🆕 Upload Manual - Guias Detalhados**
+- **Botão Google Colab:** Guia completo com 10 passos detalhados
+- **Botão Kaggle:** Tutorial avançado com 12 passos para GPU P100
+- **Comparação Visual:** Tabela comparativa entre plataformas
+- **Links Diretos:** Acesso aos guias em páginas dedicadas
+
 ### **Configuração de Dataset**
 - Dropdown com datasets disponíveis
 - Informações automáticas (tamanho, arquivos)
@@ -238,6 +244,37 @@ modelo_colab_training.zip
 2. Use mixed precision quando possível
 3. Monitore uso de memória
 4. Faça backup dos dados
+
+## 📋 **NOVOS RECURSOS - Upload Manual**
+
+### **🆕 Guia Google Colab**
+- **Acesso:** Botão "Abrir Guia Colab" na aba Export Train
+- **Conteúdo:** 10 passos detalhados com código pronto
+- **Recursos:**
+  - Instalação automática do Piper
+  - Configuração de GPU T4 gratuita
+  - Monitoramento em tempo real
+  - Download automático do modelo
+  - Código copiável em cada etapa
+
+### **🆕 Guia Kaggle Notebooks**
+- **Acesso:** Botão "Abrir Guia Kaggle" na aba Export Train
+- **Conteúdo:** 12 passos avançados para GPU P100
+- **Recursos:**
+  - Otimizações específicas para P100 (16GB VRAM)
+  - Configuração de datasets privados
+  - Batch size otimizado (até 32)
+  - Mixed precision (FP16)
+  - Monitoramento avançado com gráficos
+
+### **🆕 Comparação Visual**
+- **Tabela Interativa:** Comparação lado a lado
+- **Métricas Incluídas:**
+  - Tipo de GPU e VRAM
+  - Tempo limite de uso
+  - Facilidade de uso (estrelas)
+  - Performance relativa
+  - Requisitos de conta
 
 ## 🚀 Exemplo Completo
 
